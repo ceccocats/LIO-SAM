@@ -14,6 +14,7 @@
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/base/serialization.h>
 
 #include <gtsam/nonlinear/ISAM2.h>
 
@@ -256,13 +257,17 @@ public:
 
             scan2MapOptimization();
 
-            saveKeyFramesAndFactor();
+            if(!onlyLoc) {
+                saveKeyFramesAndFactor();
 
-            correctPoses();
+                correctPoses();
+            }
 
             publishOdometry();
 
-            publishFrames();
+            if(!onlyLoc) {
+                publishFrames();
+            }
         }
     }
 
@@ -363,6 +368,14 @@ public:
       // save key frame transformations
       pcl::io::savePCDFileBinary(saveMapDirectory + "/trajectory.pcd", *cloudKeyPoses3D);
       pcl::io::savePCDFileBinary(saveMapDirectory + "/transformations.pcd", *cloudKeyPoses6D);
+      for (int i = 0; i < (int)cloudKeyPoses3D->size(); i++) {
+        pcl::io::savePCDFileBinary(saveMapDirectory + "/cornerKeyFrames" + std::to_string(i) + ".pcd", *cornerCloudKeyFrames[i]);
+        pcl::io::savePCDFileBinary(saveMapDirectory + "/surfCloudKeyFrames" + std::to_string(i) + ".pcd", *surfCloudKeyFrames[i]);
+        cout << "\r" << std::flush << "Saving feature cloud " << i << " of " << cloudKeyPoses6D->size() << " ...";
+      }
+      //gtsam::serializeToFile(isam, saveMapDirectory + "/graph.isam");
+
+      /*
       // extract global point cloud map
       pcl::PointCloud<PointType>::Ptr globalCornerCloud(new pcl::PointCloud<PointType>());
       pcl::PointCloud<PointType>::Ptr globalCornerCloudDS(new pcl::PointCloud<PointType>());
@@ -407,12 +420,45 @@ public:
 
       downSizeFilterCorner.setLeafSize(mappingCornerLeafSize, mappingCornerLeafSize, mappingCornerLeafSize);
       downSizeFilterSurf.setLeafSize(mappingSurfLeafSize, mappingSurfLeafSize, mappingSurfLeafSize);
+      */
 
+      res.success = true;
       cout << "****************************************************" << endl;
       cout << "Saving map to pcd files completed\n" << endl;
 
       return true;
     }
+
+
+    bool loadMap()
+    {
+      string loadMapDirectory;
+
+      cout << "****************************************************" << endl;
+      cout << "Loading map from pcd files ..." << endl;
+      loadMapDirectory = std::getenv("HOME") + mapToLoad;
+      cout << "Load destination: " << loadMapDirectory << endl;
+      
+      // save key frame transformations
+      pcl::io::loadPCDFile(loadMapDirectory + "/trajectory.pcd", *cloudKeyPoses3D);
+      pcl::io::loadPCDFile(loadMapDirectory + "/transformations.pcd", *cloudKeyPoses6D);
+      for (int i = 0; i < (int)cloudKeyPoses3D->size(); i++) {
+        pcl::PointCloud<PointType>::Ptr thisCornerKeyFrame(new pcl::PointCloud<PointType>());
+        pcl::PointCloud<PointType>::Ptr thisSurfKeyFrame(new pcl::PointCloud<PointType>());
+        pcl::io::loadPCDFile(loadMapDirectory + "/cornerKeyFrames" + std::to_string(i) + ".pcd", *thisCornerKeyFrame);
+        pcl::io::loadPCDFile(loadMapDirectory + "/surfCloudKeyFrames" + std::to_string(i) + ".pcd", *thisSurfKeyFrame);
+        cornerCloudKeyFrames.push_back(thisCornerKeyFrame);
+        surfCloudKeyFrames.push_back(thisSurfKeyFrame);
+        cout << "\r" << std::flush << "Loaded feature cloud " << i << " of " << cloudKeyPoses6D->size() << " ...";
+      }
+      //gtsam::deserializeFromFile(loadMapDirectory + "/graph.isam", isam);
+
+      cout << "****************************************************" << endl;
+      cout << "Loading map to pcd files completed\n" << endl;
+
+      return true;
+    }
+
 
     void visualizeGlobalMapThread()
     {
@@ -505,8 +551,10 @@ public:
         while (ros::ok())
         {
             rate.sleep();
-            performLoopClosure();
-            visualizeLoopClosure();
+            if(!onlyLoc) {
+                performLoopClosure();
+                visualizeLoopClosure();
+            }
         }
     }
 
@@ -786,8 +834,12 @@ public:
 
         static Eigen::Affine3f lastImuTransformation;
         // initialization
-        if (cloudKeyPoses3D->points.empty())
+        if (cloudKeyPoses3D->points.empty() ||
+            ( transformTobeMapped[0] == 0 && transformTobeMapped[1] == 0 && transformTobeMapped[2] == 0 && 
+              transformTobeMapped[3] == 0 && transformTobeMapped[4] == 0 && transformTobeMapped[5] == 0    )
+           )
         {
+            std::cout<<"Initial guess\n";
             transformTobeMapped[0] = cloudInfo.imuRollInit;
             transformTobeMapped[1] = cloudInfo.imuPitchInit;
             transformTobeMapped[2] = cloudInfo.imuYawInit;
@@ -1733,6 +1785,10 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "lio_sam");
 
     mapOptimization MO;
+    if(MO.onlyLoc) {
+        MO.loadMap();
+        MO.savePCD = false;
+    }
 
     ROS_INFO("\033[1;32m----> Map Optimization Started.\033[0m");
     

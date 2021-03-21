@@ -150,6 +150,10 @@ public:
     float globalMapVisualizationPoseDensity;
     float globalMapVisualizationLeafSize;
 
+    // commands
+    bool onlyLoc;
+    std::string mapToLoad;
+
     ParamServer()
     {
         nh.param<std::string>("/robot_id", robot_id, "roboat");
@@ -241,6 +245,8 @@ public:
         nh.param<float>("lio_sam/globalMapVisualizationPoseDensity", globalMapVisualizationPoseDensity, 10.0);
         nh.param<float>("lio_sam/globalMapVisualizationLeafSize", globalMapVisualizationLeafSize, 1.0);
 
+        nh.param<std::string>("lio_sam/mapToLoad", mapToLoad, "");
+        nh.param<bool>("lio_sam/onlyLoc", onlyLoc, false);
         usleep(100);
     }
 

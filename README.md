@@ -1,3 +1,33 @@
+# LIO-SAM ceccocats
+add the possibility to save the map and localize later on it.
+
+## Save the map
+enable map saving in params.yaml:
+```yaml
+  # localization only params
+  onlyLoc: false
+  mapToLoad: "/Documents/LOAM_map/"
+  # Export settings
+  savePCD: true
+  savePCDDirectory: "/Documents/LOAM_map/"
+```
+Run LIO-SAM and when you are happy stop it with crtl-c in the terminal. It will save the map in $HOME/Documents/LOAM_map/
+
+## Run on premade map
+enable the localization only mode in params.yaml:
+```yaml
+  # localization only params
+  onlyLoc: true
+  mapToLoad: "/Documents/LOAM_map/"
+  # Export settings
+  savePCD: false
+  savePCDDirectory: "/Documents/LOAM_map/"
+```
+It will load the map from $HOME/Documents/LOAM_map/ and loc into it.
+
+NOTE: the starting point MUST be the same of the mapping starting point 
+
+
 # LIO-SAM
 
 **A real-time lidar-inertial odometry package. We strongly recommend the users read this document thoroughly and test the package with the provided dataset first. A video of the demonstration of the method can be found on [YouTube](https://www.youtube.com/watch?v=A0H8CoORZJU).**
