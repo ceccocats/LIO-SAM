@@ -1,9 +1,8 @@
 # LIO-SAM ceccocats
 - add the possibility to save the map and localize later on it.
-
-__TESTED ON DEDICATED DATASET: [20210305_dief_10hz.bag](https://drive.google.com/file/d/1yUboGRV406G_xRQ_4bwZ0E_d9oorPnjw/view?usp=sharing)__
-- ouster OS1-128
-- xsens 710
+- __TESTED ON DEDICATED DATASET: [20210305_dief_10hz.bag](https://drive.google.com/file/d/1yUboGRV406G_xRQ_4bwZ0E_d9oorPnjw/view?usp=sharing)__
+  - ouster OS1-128
+  - xsens 710
 
 ## Save the map
 enable map saving in params.yaml:
